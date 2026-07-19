@@ -9,7 +9,7 @@ pipeline = EvaluationPipeline()
 @router.post("/evaluate", response_model=EvaluationResponse)
 def evaluate_image(request: EvaluationRequest):
     try:
-        result = pipeline.run(request.image_id)
+        result = pipeline.run(request.image_id, student_id=request.student_id)
         return EvaluationResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

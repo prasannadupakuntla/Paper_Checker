@@ -1,7 +1,16 @@
-from __future__ import annotations
-
+import os
 import logging
+import threading
 from statistics import mean
+
+os.environ['FLAGS_use_mkldnn'] = '0'
+os.environ['ONEDNN_PRIMITIVE_CACHE_CAPACITY'] = '0'
+os.environ['FLAGS_allocator_strategy'] = 'naive_best_fit'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
 
 try:
     from paddleocr import PaddleOCR
@@ -34,14 +43,26 @@ class PaddleOCRService(OCRService):
         - Evaluation
     """
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(PaddleOCRService, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(
         self,
         language: str = "en",
         use_angle_cls: bool = True,
         use_gpu: bool = False,
     ) -> None:
+        if getattr(self, "_initialized", False):
+            return
+        self._initialized = True
 
         self.use_angle_cls = use_angle_cls
+        self._lock = threading.Lock()
 
         logger.info(
             "Initializing PaddleOCR with lang=%s, use_angle_cls=%s, use_gpu=%s...",
@@ -56,6 +77,9 @@ class PaddleOCRService(OCRService):
                     lang=language,
                     use_angle_cls=use_angle_cls,
                     use_gpu=use_gpu,
+                    enable_mkldnn=False,
+                    cpu_threads=1,
+                    ir_optim=False,
                 )
                 logger.info("PaddleOCR initialized successfully.")
             except Exception as e:
@@ -100,10 +124,11 @@ class PaddleOCRService(OCRService):
             )
 
         try:
-            raw_result = self.ocr.ocr(
-                image_path,
-                cls=self.use_angle_cls,
-            )
+            with self._lock:
+                raw_result = self.ocr.ocr(
+                    image_path,
+                    cls=self.use_angle_cls,
+                )
         except Exception as e:
             logger.exception("OCR failed.")
             raise RuntimeError(f"OCR failed: {e}") from e

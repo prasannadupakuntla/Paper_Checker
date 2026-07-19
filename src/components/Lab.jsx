@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, BrainCircuit, FileText, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Upload, BrainCircuit, FileText, CheckCircle2, AlertCircle, ArrowLeft, Sparkles, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import './lab.css';
 
 const BACKEND_URL = 'http://localhost:8000';
@@ -13,6 +13,23 @@ export function Lab({ onBack }) {
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('all');
+
+    // Handwriting Calibration State
+    const [studentId, setStudentId] = useState('');
+    const [isCalibrated, setIsCalibrated] = useState(false);
+    const [showCalibrateModal, setShowCalibrateModal] = useState(false);
+    const [calibrating, setCalibrating] = useState(false);
+    const [calibrationFile, setCalibrationFile] = useState(null);
+    const [calibrationImageId, setCalibrationImageId] = useState('');
+    const [calibrationResult, setCalibrationResult] = useState(null);
+    const [calibrationError, setCalibrationError] = useState('');
+    const [referenceText, setReferenceText] = useState(
+        "The quick brown fox jumps over the lazy dog. " +
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ " +
+        "abcdefghijklmnopqrstuvwxyz " +
+        "0123456789 " +
+        "Current Voltage Resistance Electricity Circuit Battery Electron Potential Difference"
+    );
 
     const handleFileChange = async (e) => {
         const selectedFile = e.target.files?.[0];
@@ -48,6 +65,73 @@ export function Lab({ onBack }) {
         }
     };
 
+    const handleCalibrateFileChange = async (e) => {
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) return;
+
+        setCalibrationFile(selectedFile);
+        setCalibrating(true);
+        setCalibrationError('');
+        setCalibrationResult(null);
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to upload image');
+            }
+
+            const data = await response.json();
+            setCalibrationImageId(data.image_id);
+        } catch (err) {
+            setCalibrationError(err.message || 'An error occurred during upload.');
+            setCalibrationFile(null);
+        } finally {
+            setCalibrating(false);
+        }
+    };
+
+    const handleRunCalibration = async () => {
+        if (!calibrationImageId || !studentId) return;
+
+        setCalibrating(true);
+        setCalibrationError('');
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/calibrate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    student_id: studentId,
+                    image_id: calibrationImageId,
+                    reference_text: referenceText || null
+                }),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Calibration failed');
+            }
+
+            const data = await response.json();
+            setCalibrationResult(data.profile);
+            setIsCalibrated(true);
+        } catch (err) {
+            setCalibrationError(err.message || 'An error occurred during calibration.');
+        } finally {
+            setCalibrating(false);
+        }
+    };
+
     const handleEvaluate = async () => {
         if (!imageId) return;
 
@@ -60,7 +144,10 @@ export function Lab({ onBack }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ image_id: imageId }),
+                body: JSON.stringify({ 
+                    image_id: imageId,
+                    student_id: studentId || null
+                }),
             });
 
             if (!response.ok) {
@@ -82,6 +169,7 @@ export function Lab({ onBack }) {
         setImageId('');
         setResult(null);
         setError('');
+        // Retain studentId and calibration status for subsequent uploads
     };
 
     return (
@@ -137,6 +225,50 @@ export function Lab({ onBack }) {
                                 {uploading && <div className="status-badge uploading"><RefreshCw size={14} className="spin" /> Uploading...</div>}
                                 {imageId && <div className="status-badge ready"><CheckCircle2 size={14} /> Ready for Evaluation</div>}
                             </div>
+
+                            {imageId && (
+                                <div className="calibration-section">
+                                    <h3>Handwriting Calibration</h3>
+                                    <div className="student-id-field">
+                                        <label>Student ID</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Optional (e.g. stud_01)"
+                                            value={studentId}
+                                            onChange={(e) => {
+                                                setStudentId(e.target.value);
+                                                setIsCalibrated(false);
+                                                setCalibrationResult(null);
+                                            }}
+                                        />
+                                    </div>
+                                    {studentId && (
+                                        <div className="calibration-actions">
+                                            {isCalibrated ? (
+                                                <div className="calibration-status success">
+                                                    <ShieldCheck size={14} /> Calibrated Profile Loaded
+                                                </div>
+                                            ) : (
+                                                <div className="calibration-status pending">
+                                                    No profile loaded
+                                                </div>
+                                            )}
+                                            <button
+                                                className="calibrate-toggle-btn"
+                                                onClick={() => {
+                                                    setShowCalibrateModal(true);
+                                                    setCalibrationFile(null);
+                                                    setCalibrationImageId('');
+                                                    setCalibrationResult(null);
+                                                    setCalibrationError('');
+                                                }}
+                                            >
+                                                <Sparkles size={14} /> Calibrate Handwriting
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {imageId && !result && (
                                 <button className="evaluate-btn" onClick={handleEvaluate} disabled={evaluating}>
@@ -295,6 +427,121 @@ export function Lab({ onBack }) {
                     </div>
                 )}
             </main>
+
+            {showCalibrateModal && (
+                <div className="calibration-modal-overlay">
+                    <div className="calibration-modal">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0 }}>Calibrate Handwriting</h2>
+                            <button 
+                                onClick={() => setShowCalibrateModal(false)}
+                                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <p className="description">
+                            Upload a sample of student <strong>{studentId}</strong>'s handwriting (calibration sheet) to mine character confusion patterns and physical metrics.
+                        </p>
+
+                        <div className="calibration-modal-body">
+                            {calibrationError && (
+                                <div className="lab-error" style={{ margin: 0 }}>
+                                    <AlertCircle size={18} />
+                                    <span>{calibrationError}</span>
+                                </div>
+                            )}
+
+                            {!calibrationFile && (
+                                <label className="calibration-upload-btn">
+                                    <Upload size={24} style={{ color: '#c084fc' }} />
+                                    <span>Upload Calibration Sheet</span>
+                                    <span style={{ fontSize: '11px', color: '#6b7280' }}>Click to browse image</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleCalibrateFileChange}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                            )}
+
+                            {calibrationFile && (
+                                <div className="file-card" style={{ marginBottom: 0 }}>
+                                    <div className="file-info" style={{ marginBottom: 0 }}>
+                                        <FileText size={20} />
+                                        <div>
+                                            <h4 style={{ fontSize: '13px', margin: 0 }}>{calibrationFile.name}</h4>
+                                            <p style={{ fontSize: '11px', margin: 0 }}>{(calibrationFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        </div>
+                                    </div>
+                                    {calibrating && !calibrationImageId && (
+                                        <div className="status-badge uploading" style={{ marginTop: '8px' }}>
+                                            <RefreshCw size={12} className="spin" /> Uploading...
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="ref-text-field">
+                                <label>Calibration Reference Text</label>
+                                <textarea
+                                    placeholder="Enter reference text student wrote..."
+                                    value={referenceText}
+                                    onChange={(e) => setReferenceText(e.target.value)}
+                                />
+                            </div>
+
+                            {calibrationResult && (
+                                <div className="metrics-summary-card">
+                                    <h4>Calibration Profile Generated!</h4>
+                                    <div className="metrics-grid">
+                                        <div className="metric-item">Avg Height: <span>{calibrationResult.physical_metrics?.average_height}px</span></div>
+                                        <div className="metric-item">Avg Width: <span>{calibrationResult.physical_metrics?.average_width}px</span></div>
+                                        <div className="metric-item">Line Spacing: <span>{calibrationResult.physical_metrics?.line_spacing}px</span></div>
+                                        <div className="metric-item">Slant: <span>{calibrationResult.physical_metrics?.slant}°</span></div>
+                                    </div>
+                                    <div style={{ marginTop: '4px' }}>
+                                        <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500' }}>Mined Confusions:</span>
+                                        <div className="confusions-list">
+                                            {Object.entries(calibrationResult.common_confusions || {}).length > 0 ? (
+                                                Object.entries(calibrationResult.common_confusions).map(([ocr, exp]) => (
+                                                    <span key={ocr} className="confusion-tag">"{ocr}" ➔ "{exp}"</span>
+                                                ))
+                                            ) : (
+                                                <span style={{ fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>None detected (perfect OCR match)</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="calibration-modal-footer">
+                            <button className="modal-cancel-btn" onClick={() => setShowCalibrateModal(false)}>
+                                Close
+                            </button>
+                            {calibrationImageId && !calibrationResult && (
+                                <button 
+                                    className="modal-action-btn" 
+                                    onClick={handleRunCalibration}
+                                    disabled={calibrating}
+                                >
+                                    {calibrating ? (
+                                        <>
+                                            <RefreshCw size={14} className="spin" /> Calibrating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={14} /> Run Calibration
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from backend.api.health import router as health_router
 from backend.api.upload import router as upload_router
 from backend.api.evaluate import router as evaluate_router
+from backend.api.calibration_api import router as calibration_router
 
 app = FastAPI(
     title="Paper Checker API",
@@ -33,6 +34,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.include_router(health_router, tags=["Health"])
 app.include_router(upload_router, tags=["Upload"])
 app.include_router(evaluate_router, tags=["Evaluation"])
+app.include_router(calibration_router, tags=["Calibration"])
 
 # Global exception handlers
 @app.exception_handler(HTTPException)

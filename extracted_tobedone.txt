@@ -1,0 +1,94 @@
+--- Page 1 ---
+Paper Checker - Team Member 3
+Module: Backend API + Demo UI
+Goal
+Build the API and Demo Interface.
+This module MUST NOT modify OCR or Evaluation code.
+Folder Structure
+backend/
+api/
+ upload.py
+ evaluate.py
+schemas/
+ request.py
+ response.py
+app.py
+frontend/
+Paper Checker Lab
+Tasks
+--- Page 2 ---
+Task 1
+FastAPI
+Create
+GET /
+GET /health
+POST /upload
+POST /evaluate
+Task 2
+Upload API
+Accept
+Image
+Return
+Image ID
+Task 3
+Evaluation API
+Pipeline
+Image
+↓
+OCR
+↓
+Calibration
+↓
+--- Page 3 ---
+Evaluation
+↓
+Feedback
+↓
+JSON Response
+Task 4
+Schemas
+Create
+UploadRequest
+UploadResponse
+EvaluationRequest
+EvaluationResponse
+Task 5
+Paper Checker Lab
+Create one page.
+Display
+Original Image
+↓
+OCR Text
+↓
+Corrected OCR
+↓
+Retrieved Concept
+--- Page 4 ---
+↓
+Rubric
+↓
+Evaluation
+↓
+Confidence
+↓
+Feedback
+Task 6
+Error Handling
+Return
+400
+404
+500
+Proper JSON
+Task 7
+Swagger
+Enable FastAPI Docs
+/docs
+Deliverables
+✓ Upload API
+✓ Evaluation API
+--- Page 5 ---
+✓ Demo Interface
+✓ Response Schemas
+✓ Swagger
+Branch
+feature/backend-api

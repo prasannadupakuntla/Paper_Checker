@@ -1,0 +1,131 @@
+{
+    "chapter": {
+        "id": 11,
+        "title": "Electricity",
+        "subject": "Science",
+        "grade": 10,
+        "description": "This chapter covers electric current, potential difference, resistance, Ohm's Law, electric power, and household electric circuits."
+    },
+    "topics": [
+        {
+            "id": 1,
+            "title": "Electric Current",
+            "content": "Electric current is the flow of electric charge through a conductor.",
+            "formula": "I = Q / t",
+            "units": "Ampere (A)"
+        },
+        {
+            "id": 2,
+            "title": "Potential Difference",
+            "content": "Potential difference is the work done in moving a unit charge from one point to another.",
+            "formula": "V = W / Q",
+            "units": "Volt (V)"
+        },
+        {
+            "id": 3,
+            "title": "Ohm's Law",
+            "content": "The current through a conductor is directly proportional to the potential difference across it, provided the temperature remains constant.",
+            "formula": "V = IR"
+        },
+        {
+            "id": 4,
+            "title": "Resistance",
+            "content": "Resistance is the opposition offered by a conductor to the flow of current.",
+            "formula": "R = V / I",
+            "units": "Ohm (Ω)"
+        },
+        {
+            "id": 5,
+            "title": "Electric Power",
+            "content": "Electric power is the rate at which electrical energy is consumed.",
+            "formula": "P = VI",
+            "units": "Watt (W)"
+        }
+    ],
+    "formulas": [
+        {
+            "name": "Current",
+            "expression": "I = Q / t"
+        },
+        {
+            "name": "Ohm's Law",
+            "expression": "V = IR"
+        },
+        {
+            "name": "Power",
+            "expression": "P = VI"
+        },
+        {
+            "name": "Power (Alternative)",
+            "expression": "P = I²R"
+        },
+        {
+            "name": "Power (Alternative)",
+            "expression": "P = V²/R"
+        }
+    ],
+    "key_points": [
+        "Electric current is measured using an ammeter.",
+        "Potential difference is measured using a voltmeter.",
+        "Resistance depends on material, length, area, and temperature.",
+        "Resistors in series have higher equivalent resistance.",
+        "Resistors in parallel have lower equivalent resistance."
+    ],
+    "examples": [
+        {
+            "question": "A current of 2 A flows through a resistor connected to a 10 V battery. Find the resistance.",
+            "solution": "R = V / I = 10 / 2 = 5 Ω"
+        },
+        {
+            "question": "A bulb consumes 60 W of power at 220 V. Find the current.",
+            "solution": "I = P / V = 60 / 220 ≈ 0.27 A"
+        }
+    ],
+    "mcqs": [
+        {
+            "id": 1,
+            "question": "The SI unit of electric current is:",
+            "options": [
+                "Volt",
+                "Ampere",
+                "Ohm",
+                "Watt"
+            ],
+            "correctAnswer": "Ampere"
+        },
+        {
+            "id": 2,
+            "question": "Ohm's Law is represented by:",
+            "options": [
+                "P = VI",
+                "V = IR",
+                "I = Q/t",
+                "R = ρL/A"
+            ],
+            "correctAnswer": "V = IR"
+        },
+        {
+            "id": 3,
+            "question": "The SI unit of resistance is:",
+            "options": [
+                "Volt",
+                "Watt",
+                "Ohm",
+                "Ampere"
+            ],
+            "correctAnswer": "Ohm"
+        }
+    ],
+    "numericals": [
+        {
+            "id": 1,
+            "question": "Calculate the current if 120 C of charge flows in 60 s.",
+            "answer": "2 A"
+        },
+        {
+            "id": 2,
+            "question": "Find the power consumed by a device operating at 12 V and drawing 3 A.",
+            "answer": "36 W"
+        }
+    ]
+}

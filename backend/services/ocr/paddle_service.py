@@ -37,7 +37,12 @@ class PaddleOCRService(OCRService):
 
         self.use_angle_cls = use_angle_cls
 
-        logger.info("Initializing PaddleOCR...")
+        logger.info(
+            "Initializing PaddleOCR with lang=%s, use_angle_cls=%s, use_gpu=%s...",
+            language,
+            use_angle_cls,
+            use_gpu,
+        )
 
         self.ocr = PaddleOCR(
             lang=language,
@@ -57,7 +62,7 @@ class PaddleOCRService(OCRService):
         Returns:
             OCRResult
         """
-
+        logger.info("Running OCR extraction on image: %s", image_path)
         try:
 
             raw_result = self.ocr.ocr(

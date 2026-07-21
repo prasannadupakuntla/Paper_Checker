@@ -1,6 +1,7 @@
 import os
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from statistics import mean
 
 os.environ['FLAGS_use_mkldnn'] = '0'
@@ -63,6 +64,17 @@ class PaddleOCRService(OCRService):
 
         self.use_angle_cls = use_angle_cls
         self._lock = threading.Lock()
+        # PaddlePaddle inference predictors are not thread-safe: running the
+        # same predictor from more than one thread raises
+        # "could not execute a primitive". FastAPI serves sync endpoints from a
+        # thread pool, so successive requests (e.g. calibrate then evaluate) can
+        # land on different worker threads. Pin every inference call to a single
+        # dedicated worker thread so the predictor always runs on the thread it
+        # was first executed on.
+        self._executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="paddle-ocr",
+        )
 
         logger.info(
             "Initializing PaddleOCR with lang=%s, use_angle_cls=%s, use_gpu=%s...",
@@ -125,10 +137,11 @@ class PaddleOCRService(OCRService):
 
         try:
             with self._lock:
-                raw_result = self.ocr.ocr(
+                raw_result = self._executor.submit(
+                    self.ocr.ocr,
                     image_path,
                     cls=self.use_angle_cls,
-                )
+                ).result()
         except Exception as e:
             logger.exception("OCR failed.")
             raise RuntimeError(f"OCR failed: {e}") from e

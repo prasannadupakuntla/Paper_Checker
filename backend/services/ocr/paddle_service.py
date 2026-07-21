@@ -144,9 +144,38 @@ class PaddleOCRService(OCRService):
                 ).result()
         except Exception as e:
             logger.exception("OCR failed.")
-            raise RuntimeError(f"OCR failed: {e}") from e
+            raise RuntimeError(self._describe_ocr_failure(e)) from e
 
         return self._parse_result(raw_result)
+
+    @staticmethod
+    def _describe_ocr_failure(error: Exception) -> str:
+        """
+        Turn a raw PaddlePaddle inference exception into a short, actionable
+        message. PaddlePaddle dumps a multi-thousand-character traceback for
+        oneDNN/mkldnn kernel errors (e.g. "OneDnnContext does not have the
+        input Filter" for fused_conv2d, or "could not execute a primitive"),
+        which is unreadable in the UI. These almost always mean the installed
+        paddlepaddle build is enabling oneDNN despite our attempts to disable it
+        — typically an unsupported/old paddle version rather than a code bug.
+        """
+        text = str(error).lower()
+        onednn_markers = (
+            "onednncontext",
+            "could not execute a primitive",
+            "mkldnn",
+            "onednn",
+            "fused_conv2d",
+        )
+        if any(marker in text for marker in onednn_markers):
+            return (
+                "OCR failed: PaddlePaddle's oneDNN/mkldnn backend errored (this "
+                "usually means an incompatible paddlepaddle build). Install the "
+                "version pinned in requirements.txt (paddlepaddle==3.3.1, "
+                "paddleocr==2.10.0) on Python 3.11+, or run the CPU build with "
+                "oneDNN disabled (FLAGS_use_mkldnn=0)."
+            )
+        return f"OCR failed: {error}"
 
     def _parse_result(self, raw_result) -> OCRResult:
         """
